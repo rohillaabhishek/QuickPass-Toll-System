@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickPass | Smart Toll System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .gate-animate {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col">
+    <div class="max-w-6xl mx-auto w-full flex-grow">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M16 10h4v10h-4z"/><path d="M10 14h4v6h-4z"/><path d="M4 18h4v2H4z"/><path d="M2 22h20"/><path d="M12 2v10"/><path d="m17 7-5-5-5 5"/></svg>
+                    QuickPass <span class="text-blue-600 font-normal">Toll System</span>
+                </h1>
+                <p class="text-slate-500">Real-time toll processing and revenue management</p>
+            </div>
+            <div class="text-right">
+                <div id="currentTime" class="text-lg font-semibold text-slate-700"></div>
+                <div class="text-sm text-slate-500">Toll Plaza: Manav Rachna</div>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="bg-blue-100 p-3 rounded-xl text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Total Revenue</p>
+                    <h2 id="totalRevenue" class="text-2xl font-bold text-slate-800">₹0.00</h2>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="bg-emerald-100 p-3 rounded-xl text-emerald-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Vehicles Passed</p>
+                    <h2 id="vehicleCount" class="text-2xl font-bold text-slate-800">0</h2>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="bg-amber-100 p-3 rounded-xl text-amber-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Avg. Toll/Car</p>
+                    <h2 id="avgToll" class="text-2xl font-bold text-slate-800">₹0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <!-- Processing Terminal -->
+            <div class="lg:col-span-2 space-y-8">
+                <section class="bg-white p-8 rounded-3xl shadow-md border border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                        Entry Terminal
+                    </h3>
+                    
+                    <form id="tollForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-600">Vehicle Number</label>
+                            <input type="text" id="vehiclePlate" placeholder="e.g. HR 51 AB 1234" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase font-mono tracking-widest transition-all">
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-slate-600">Vehicle Category</label>
+                            <select id="vehicleType" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                                <option value="Car">Car / Jeep (₹150)</option>
+                                <option value="Two-Wheeler">Two-Wheeler (₹50)</option>
+                                <option value="LCV">Light Commercial (₹250)</option>
+                                <option value="Bus/Truck">Bus / Truck (₹450)</option>
+                                <option value="HCM">Heavy Construction (₹700)</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-2">
+                            <label class="text-sm font-medium text-slate-600">Trip Type</label>
+                            <div class="flex gap-4">
+                                <label class="flex-1 border p-4 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors border-slate-200 peer-checked:border-blue-500">
+                                    <input type="radio" name="tripType" value="Single" checked class="hidden peer">
+                                    <span class="block font-medium">Single Trip</span>
+                                    <span class="text-xs text-slate-500">Standard rate applies</span>
+                                </label>
+                                <label class="flex-1 border p-4 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors border-slate-200">
+                                    <input type="radio" name="tripType" value="Return" class="hidden peer">
+                                    <span class="block font-medium">Return Trip</span>
+                                    <span class="text-xs text-slate-500">Save 25% on return</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="md:col-span-2 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                            Process Payment & Open Gate
+                        </button>
+                    </form>
+                </section>
+
+                <!-- Gate Visualizer -->
+                <section class="bg-slate-900 rounded-3xl p-8 overflow-hidden relative min-h-[200px] flex items-end">
+                    <div class="absolute top-4 left-6 text-slate-400 text-xs font-mono uppercase tracking-widest">Live Lane Monitoring</div>
+                    
+                    <div class="w-full flex items-end justify-between border-b-4 border-slate-700 pb-1">
+                        <!-- Left Pillar -->
+                        <div class="w-12 h-32 bg-slate-800 rounded-t-lg relative">
+                            <div id="statusLight" class="absolute top-4 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all"></div>
+                        </div>
+                        
+                        <!-- Gate Arm -->
+                        <div id="gateArm" class="absolute left-12 bottom-1 w-full h-4 bg-amber-500 origin-left gate-animate rounded-full border-2 border-amber-600 shadow-xl" style="width: calc(100% - 6rem);"></div>
+                        
+                        <!-- Right Pillar -->
+                        <div class="w-12 h-16 bg-slate-800 rounded-t-lg"></div>
+                    </div>
+                    
+                    <!-- Processing Overlay -->
+                    <div id="overlay" class="absolute inset-0 bg-blue-600/20 backdrop-blur-sm hidden flex items-center justify-center">
+                        <div class="bg-white p-6 rounded-2xl shadow-2xl text-center scale-up">
+                            <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p class="font-bold text-slate-800">Processing Transaction...</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Transaction History & Sidebar -->
+            <div class="space-y-8">
+                <section class="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden flex flex-col h-[600px]">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800">Recent Transactions</h3>
+                        <span id="logCount" class="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-full">0</span>
+                    </div>
+                    
+                    <div id="transactionLogs" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        <!-- Empty State -->
+                        <div id="emptyLog" class="h-full flex flex-col items-center justify-center text-slate-400 opacity-50 text-center p-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <p>No transactions yet today</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border-t border-slate-100">
+                        <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors">Clear history</button>
+                    </div>
+                </section>
+
+                <!-- Feedback Message Box -->
+                <div id="messageBox" class="hidden transform transition-all duration-300 translate-y-4 opacity-0">
+                    <div class="p-4 rounded-2xl flex items-center gap-4 shadow-lg border">
+                        <div id="msgIcon" class="p-2 rounded-lg"></div>
+                        <div id="msgText" class="text-sm font-medium"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-8 text-center border-t border-slate-200 bg-white">
+        <p class="text-slate-500 text-sm flex items-center justify-center gap-1">
+            Created with 
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-red-500"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            by <span class="font-bold text-slate-800">Amit Parshad</span>
+        </p>
+        <div class="flex justify-center gap-4 mt-2">
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">© 2026 QuickPass Analytics</span>
+        </div>
+    </footer>
+
+    <script>
+        // State Management
+        let stats = {
+            revenue: 0,
+            vehicles: 0,
+            logs: []
+        };
+
+        const rates = {
+            "Car": 150,
+            "Two-Wheeler": 50,
+            "LCV": 250,
+            "Bus/Truck": 450,
+            "HCM": 700
+        };
+
+        // DOM Elements
+        const tollForm = document.getElementById('tollForm');
+        const transactionLogs = document.getElementById('transactionLogs');
+        const emptyLog = document.getElementById('emptyLog');
+        const totalRevEl = document.getElementById('totalRevenue');
+        const vehCountEl = document.getElementById('vehicleCount');
+        const avgTollEl = document.getElementById('avgToll');
+        const gateArm = document.getElementById('gateArm');
+        const statusLight = document.getElementById('statusLight');
+        const overlay = document.getElementById('overlay');
+        const messageBox = document.getElementById('messageBox');
+        const logCountEl = document.getElementById('logCount');
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString('en-US', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Notification System
+        function showMessage(text, type = 'success') {
+            const msgIcon = document.getElementById('msgIcon');
+            const msgText = document.getElementById('msgText');
+            
+            messageBox.className = 'transform transition-all duration-300 translate-y-0 opacity-100';
+            messageBox.classList.remove('hidden');
+
+            if (type === 'success') {
+                messageBox.querySelector('div').className = 'p-4 rounded-2xl flex items-center gap-4 shadow-lg border border-emerald-100 bg-emerald-50 text-emerald-800';
+                msgIcon.className = 'p-2 rounded-lg bg-emerald-200 text-emerald-700';
+                msgIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+            } else {
+                messageBox.querySelector('div').className = 'p-4 rounded-2xl flex items-center gap-4 shadow-lg border border-amber-100 bg-amber-50 text-amber-800';
+                msgIcon.className = 'p-2 rounded-lg bg-amber-200 text-amber-700';
+                msgIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`;
+            }
+
+            msgText.innerText = text;
+
+            setTimeout(() => {
+                messageBox.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => messageBox.classList.add('hidden'), 300);
+            }, 4000);
+        }
+
+        // Gate Control
+        function toggleGate(open) {
+            if (open) {
+                gateArm.style.transform = 'rotate(-90deg)';
+                statusLight.classList.remove('bg-red-500', 'shadow-[0_0_10px_rgba(239,68,68,0.8)]');
+                statusLight.classList.add('bg-emerald-500', 'shadow-[0_0_10px_rgba(16,185,129,0.8)]');
+                
+                // Automatically close after 3 seconds
+                setTimeout(() => toggleGate(false), 3500);
+            } else {
+                gateArm.style.transform = 'rotate(0deg)';
+                statusLight.classList.remove('bg-emerald-500', 'shadow-[0_0_10px_rgba(16,185,129,0.8)]');
+                statusLight.classList.add('bg-red-500', 'shadow-[0_0_10px_rgba(239,68,68,0.8)]');
+            }
+        }
+
+        // Processing Logic
+        tollForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const plate = document.getElementById('vehiclePlate').value.trim();
+            const type = document.getElementById('vehicleType').value;
+            const trip = document.querySelector('input[name="tripType"]:checked').value;
+            
+            // Calculate Toll
+            let amount = rates[type];
+            if (trip === 'Return') amount = amount * 1.5; // 25% discount logic (150+150 vs 225)
+
+            // Show Loading
+            overlay.classList.remove('hidden');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                processTransaction(plate, type, trip, amount);
+                tollForm.reset();
+                toggleGate(true);
+                showMessage(`Receipt generated for ${plate}. Gate opening...`);
+            }, 1200);
+        });
+
+        function processTransaction(plate, type, trip, amount) {
+            // Update Stats
+            stats.revenue += amount;
+            stats.vehicles += 1;
+            
+            const transaction = {
+                id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+                plate,
+                type,
+                trip,
+                amount,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            stats.logs.unshift(transaction);
+            updateUI();
+        }
+
+        function updateUI() {
+            // Update Stats counters
+            totalRevEl.innerText = `₹${stats.revenue.toLocaleString()}`;
+            vehCountEl.innerText = stats.vehicles;
+            logCountEl.innerText = stats.logs.length;
+            
+            const avg = stats.vehicles > 0 ? Math.round(stats.revenue / stats.vehicles) : 0;
+            avgTollEl.innerText = `₹${avg}`;
+
+            // Update Logs
+            emptyLog.classList.add('hidden');
+            transactionLogs.innerHTML = '';
+            
+            stats.logs.forEach(log => {
+                const logEl = document.createElement('div');
+                logEl.className = 'bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center transition-all hover:border-blue-200';
+                logEl.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-slate-400 border border-slate-200">
+                             <span class="text-[10px] font-bold">${log.time}</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">${log.plate}</p>
+                            <p class="text-[10px] text-slate-500 uppercase font-bold tracking-tight">${log.type} • ${log.trip}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-blue-600">₹${log.amount}</p>
+                        <p class="text-[10px] font-mono text-slate-400">#${log.id}</p>
+                    </div>
+                `;
+                transactionLogs.appendChild(logEl);
+            });
+
+            if (stats.logs.length === 0) {
+                emptyLog.classList.remove('hidden');
+            }
+        }
+
+        function clearLogs() {
+            stats.logs = [];
+            updateUI();
+            showMessage("History cleared", "info");
+        }
+    </script>
+</body>
+</html>
